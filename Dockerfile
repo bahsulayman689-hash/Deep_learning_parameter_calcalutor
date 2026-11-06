@@ -13,6 +13,7 @@ FROM nginx:1.25-alpine
 # Copy the static web calculator into Nginx default serving root
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
+
 # Expose port 80 to access your calculator outside the container
 EXPOSE 80
 
