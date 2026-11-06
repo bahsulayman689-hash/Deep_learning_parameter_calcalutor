@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keras Structural Parameter Calculator (with SimpleRNN)</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --rnn-color: #0ea5e9;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --terminal-bg: #0f141c;
+            --terminal-text: #a5b4fc;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .layout-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .input-row {
+            margin-bottom: 16px;
+        }
+
+        .input-row label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .input-row input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .input-row input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .math-block {
+            background-color: var(--bg-color);
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .math-block.rnn-theme {
+            border-left-color: var(--rnn-color);
+        }
+
+        .math-header {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .math-step {
+            font-family: monospace;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .total-display {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 8px;
+        }
+
+        .terminal-box {
+            background-color: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-family: "SFMono-Regular", Consolas, monospace;
+            padding: 20px;
+            border-radius: 10px;
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Keras Multi-Recurrent Layer Parameter Calculator</h1>
+    
+    <div class="layout-grid">
+        <!-- Configuration Controls -->
+        <div class="card">
+            <div class="card-header">Model Hyperparameters Configuration</div>
+            
+            <div class="input-row">
+                <label for="vocab">Embedding Vocabulary Size (Unique Tokens)</label>
+                <input type="number" id="vocab" value="5000" min="1">
+            </div>
+            
+            <div class="input-row">
+                <label for="embed">Embedding Dense Output Vector Dimensions</label>
+                <input type="number" id="embed" value="128" min="1">
+            </div>
+
+            <div class="input-row">
+                <label for="rnn">SimpleRNN Hidden Dimensional Units</label>
+                <input type="number" id="rnn" value="64" min="1">
+            </div>
+            
+            <div class="input-row">
+                <label for="lstm">LSTM Gated Dimensional Units</label>
+                <input type="number" id="lstm" value="128" min="1">
+            </div>
+            
+            <div class="input-row">
+                <label for="dense">Dense Output Target Classes</label>
+                <input type="number" id="dense" value="1" min="1">
+            </div>
+        </div>
+
+        <!-- Calculations Breakdowns -->
+        <div class="card">
+            <div class="card-header">Layer Weight Parameter Matrix Equations</div>
+            
+            <div class="math-block">
+                <div class="math-header">Embedding Variable Weights</div>
+                <div id="embed-math" class="math-step"></div>
+            </div>
+
+            <div class="math-block rnn-theme">
+                <div class="math-header">SimpleRNN Matrix parameters [1 Step Cell]</div>
+                <div id="rnn-math" class="math-step"></div>
+            </div>
+            
+            <div class="math-block">
+                <div class="math-header">LSTM Matrix Blocks [4 Logical Processing Gates]</div>
+                <div id="lstm-math" class="math-step"></div>
+            </div>
+            
+            <div class="math-block">
+                <div class="math-header">Dense Layer Intercept Kernels</div>
+                <div id="dense-math" class="math-step"></div>
+            </div>
+
+            <div>
+                <strong>Aggregated Total Trainable Network Parameters:</strong><br>
+                <div id="total-badge" class="total-display">0 parameters</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Output Box summary presentation -->
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">Simulated Terminal Environment Console Output</div>
+        <div id="summary" class="terminal-box"></div>
+    </div>
+</div>
+
+<script>
+    const elVocab = document.getElementById('vocab');
+    const elEmbed = document.getElementById('embed');
+    const elRnn = document.getElementById('rnn');
+    const elLstm = document.getElementById('lstm');
+    const elDense = document.getElementById('dense');
+
+    function executeNetworkCalculation() {
+        const vocab = parseInt(elVocab.value) || 0;
+        const embed = parseInt(elEmbed.value) || 0;
+        const rnn = parseInt(elRnn.value) || 0;
+        const lstm = parseInt(elLstm.value) || 0;
+        const dense = parseInt(elDense.value) || 0;
+
+        // 1. Embedding Layer Weight
+        const embedParams = vocab * embed;
+        document.getElementById('embed-math').innerHTML = 
+            `Formula: Vocab Limit (${vocab}) &times; Vector Space Width (${embed})<br>Total Parameters: <strong>${embedParams.toLocaleString()}</strong>`;
+
+        // 2. SimpleRNN Weight Logic Breakdown
+        const rnnParams = rnn * (embed + rnn + 1);
+        document.getElementById('rnn-math').innerHTML = 
+            `Formula: RNN Units (${rnn}) &times; [ Embedding Width (${embed}) + Recurrent Hidden Context (${rnn}) + Bias Vector (1) ]<br>Total Parameters: <strong>${rnnParams.toLocaleString()}</strong>`;
+
+        // 3. LSTM Gate System Mathematical Resolution
+        // Important sequential transfer properties: SimpleRNN output passes forward to LSTM input
+        const lstmParams = 4 * ((rnn + lstm) * lstm + lstm);
+        document.getElementById('lstm-math').innerHTML = 
+            `Formula: 4 gates &times; [ (RNN Input Width (${rnn}) + LSTM Units (${lstm})) &times; Gate Dimension Width (${lstm}) + Cell Biases (${lstm}) ]<br>Total Parameters: <strong>${lstmParams.toLocaleString()}</strong>`;
+
+        // 4. Dense Structural Weights Calculation Matrix
+        const denseParams = (lstm * dense) + dense;
+        document.getElementById('dense-math').innerHTML = 
+            `Formula: (LSTM Inputs (${lstm}) &times; Target Classifier Space (${dense})) + Dense Biases (${dense})<br>Total Parameters: <strong>${denseParams.toLocaleString()}</strong>`;
+
+        // Sum complete value matrix scale
+        const totalParams = embedParams + rnnParams + lstmParams + denseParams;
+        document.getElementById('total-badge').innerText = `${totalParams.toLocaleString()} parameters`;
+
+        generateModelSummaryInterface(embedParams, rnnParams, lstmParams, denseParams, totalParams);
+    }
+
+    function generateModelSummaryInterface(e, r, l, d, total) {
+        const align = (str, len) => str.toString().padEnd(len, ' ');
+        const textStreamString = 
+`Model: "sequential_mixed_recurrent_hybrid"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ embedding (Embedding)       (None, 200, ${align(elEmbed.value, 10)})     ${align(e.toLocaleString(), 10)}
+                                                                 
+ simple_rnn (SimpleRNN)       (None, 200, ${align(elRnn.value, 10)})      ${align(r.toLocaleString(), 10)}
+                                                                 
+ lstm (LSTM)                 (None, ${align(elLstm.value, 15)})     ${align(l.toLocaleString(), 10)}
+                                                                 
+ dense (Dense)               (None, ${align(elDense.value, 15)})     ${align(d.toLocaleString(), 10)}
+=================================================================
+Total params: ${total.toLocaleString()} (${(total * 4 / 1024 / 1024).toFixed(2)} MB)
+Trainable params: ${total.toLocaleString()} (${(total * 4 / 1024 / 1024).toFixed(2)} MB)
+Non-trainable params: 0 (0.00 B)
+_________________________________________________________________`;
+        document.getElementById('summary').innerText = textStreamString;
+    }
+
+    // Event listeners for real-time calculation
+    [elVocab, elEmbed, elRnn, elLstm, elDense].forEach(el => {
+        el.addEventListener('input', executeNetworkCalculation);
+    });
+
+    // Initial calculation on page load
+    executeNetworkCalculation();
+</script>
+</body>
+</html>
