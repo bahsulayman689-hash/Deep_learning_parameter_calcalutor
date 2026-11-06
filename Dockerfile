@@ -3,7 +3,7 @@
 # ==========================================
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY src/index.html ./dist/
+COPY index.html ./dist/
 
 # ==========================================
 # STAGE 2: Secure Production Server Production Production Production
